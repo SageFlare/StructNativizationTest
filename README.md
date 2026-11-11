@@ -54,17 +54,35 @@ Result in Chivalry 2 (Unchained, 2026-11-11): **STRUCT OK** with the pillar grow
 
 Evidence level: **package** for the A/B and **in game** for the excluded struct (ArgonSDK, UE 4.25.4). This shows that the struct type loads from the mod PAK and carries a value written at runtime through a variable. Not tested: struct default values saved in assets or set on placed actors, arrays of structs, data tables, replication and SaveGame.
 
+### 3. Struct use suite (same map)
+
+A second row of probes uses `Types/S_SNT_Rich` (excluded from nativization; members `Flag` bool default true, `Count` int default 7, `Label` string default "asset default"). Each probe's panel shows `<TEST>: OK` or `<TEST>: FAIL` with the values it read.
+
+| Probe | What it checks | OK when |
+| --- | --- | --- |
+| `BP_SNT_Defaults` | a struct variable left at the struct's defaults, and a struct variable with a Blueprint default value | 7 / "asset default" / true, and 42 / "bp default" |
+| `BP_SNT_Instance` (two placed) | struct values set per placed actor in the map | each actor reads its own Count (11 / 22) |
+| `BP_SNT_Array` | an array of structs with 3 entries saved on the class | loop sees 3 entries, Count sum 6 |
+| `BP_SNT_Table` + `Types/DT_SNT_Rows` | a data table whose row struct is the mod struct | rows Alpha (100, "alpha") and Beta (200, "beta") found |
+| `BP_SNT_SaveProbe` + `BP_SNT_SaveGame` | a struct in a SaveGame: write, save to slot `SNT_StructTest`, load, compare | saved and reloaded values match; the run number grows each match start |
+| `BP_SNT_Replicated` | a replicated struct variable set by the server | on a **client** that joined a server: no local authority and Count 99 / "from server". Standalone or host shows the server side only |
+
+Caveat on DEFAULTS: when cooking, UE 4.25 writes the struct values into the Blueprint itself instead of a delta against the struct's defaults, so this checks that the variable kept its values through cooking, not that the struct's default instance is rebuilt at runtime.
+
+In-game result: pending (C2 check of the suite).
+
 ### Reproduce
 
 1. Copy `Content/` into your SDK so it appears as `/Game/Mods/AgMods/StructNativizationTest` (a copy or a directory junction).
-2. Add the two `_Excluded` paths to `[BlueprintNativizationSettings]` in `Config/DefaultEditor.ini`:
+2. Add the excluded paths to `[BlueprintNativizationSettings]` in `Config/DefaultEditor.ini`:
    ```ini
    +ExcludedAssets=/Game/Mods/AgMods/StructNativizationTest/Types/S_SNT_Excluded
    +ExcludedAssets=/Game/Mods/AgMods/StructNativizationTest/Types/E_SNT_Excluded
+   +ExcludedAssets=/Game/Mods/AgMods/StructNativizationTest/Types/S_SNT_Rich
    ```
 3. Cook the probe map and the folder: `UE4Editor-Cmd <ProjectRoot>/TBL.uproject -run=cook -targetplatform=WindowsNoEditor -map=/Game/Mods/AgMods/StructNativizationTest/FFA_StructNativizationTest -COOKDIR=/Game/Mods/AgMods/StructNativizationTest`.
 4. Package A/B: in `<ProjectRoot>/Saved/Cooked/WindowsNoEditor/TBL/Content/Mods/AgMods/StructNativizationTest` the control types are absent; their generated C++ is under `<ProjectRoot>/Intermediate/Plugins/NativizedAssets/`.
-5. In game: **before packing, delete the cooked `BP_SNT_Holder.uasset` / `.uexp`** (it references the missing control types and does not belong in a playable PAK). Pack the rest under `../../../TBL/Content/Mods/AgMods/StructNativizationTest/`, install it like any mod PAK, start an FFA match on `FFA_StructNativizationTest` and look at the north wall.
+5. In game: **before packing, delete the cooked `BP_SNT_Holder.uasset` / `.uexp`** (it references the missing control types and does not belong in a playable PAK). Pack the rest under `../../../TBL/Content/Mods/AgMods/StructNativizationTest/`, install it like any mod PAK, start an FFA match on `FFA_StructNativizationTest` and look at the north wall (first probe) and the two rows of panels in front of you (suite). For replication, host a server with the PAK and join it as a client.
 
 Remove the two ini lines again afterwards if you don't want them in your project. `Blueprints/BP_MazeStartup` is the match-startup helper from [MirrorMaze](https://github.com/SageFlare/MirrorMaze) (zeroes the start wait and starts respawn waves).
 
