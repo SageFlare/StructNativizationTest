@@ -67,6 +67,8 @@ A second row of probes uses `Types/S_SNT_Rich` (excluded from nativization; memb
 | `BP_SNT_SaveProbe` + `BP_SNT_SaveGame` | a struct in a SaveGame: write, save to slot `SNT_StructTest`, load, compare | saved and reloaded values match; the run number grows each match start |
 | `BP_SNT_Replicated` | a replicated struct variable set by the server | on a **client** that joined a server: no local authority and Count 99 / "from server". Standalone or host shows the server side only |
 
+**SAVEGAME writes one file.** Starting the map creates (and on later starts overwrites) `SNT_StructTest.sav`, about 1.4 KB, in `%LOCALAPPDATA%\Chivalry 2\Saved_Unchained\SaveGames\` (the folder Unchained's own mod loader also saves to). It holds only the probe's three values (Flag, Count, Label), uses a fixed slot name, and is safe to delete; nothing else reads it. Mods in general can write save files this way, and UE 4.25 does not sanitize slot names, so be careful with PAKs from unknown sources; see [PAK review: SaveGame files](https://github.com/SageFlare/Chivalry2-Mod-Wiki/blob/main/game-research/pak-review.md#savegame-files).
+
 Caveat on DEFAULTS: when cooking, UE 4.25 writes the struct values into the Blueprint itself instead of a delta against the struct's defaults, so this checks that the variable kept its values through cooking, not that the struct's default instance is rebuilt at runtime.
 
 In-game result: pending (C2 check of the suite).
