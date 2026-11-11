@@ -1,0 +1,4 @@
+*.uasset binary
+*.uexp binary
+*.umap binary
+*.pak binary
