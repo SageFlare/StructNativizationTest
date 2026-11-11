@@ -28,7 +28,9 @@ Check that each type's `.uasset` / `.uexp` is in the PAK listing (`UnrealPak <pa
 
 ## The test
 
-`Content/` holds the assets, for the package path `/Game/Mods/AgMods/StructNativizationTest`:
+Two parts, both in `Content/` for the package path `/Game/Mods/AgMods/StructNativizationTest`.
+
+### 1. Package A/B (does the type reach the PAK?)
 
 | Asset | Excluded for the cook | Result |
 | --- | --- | --- |
@@ -38,7 +40,19 @@ Check that each type's `.uasset` / `.uexp` is in the PAK listing (`UnrealPak <pa
 | `Types/E_SNT_Control` (enum) | no | converted to C++, **missing** (proves nativization ran) |
 | `BP_SNT_Holder` | n/a | in the PAK, with one variable of each type; still references both control types |
 
-Tested with ArgonSDK on UE 4.25.4 (2026-11-11). Evidence level: **package** (cooked output and PAK listing) and **in game** for the excluded struct: a probe Blueprint in a test map wrote a value into `S_SNT_Excluded` at runtime, read it back through a variable of that type and branched on it correctly in Chivalry 2 (2026-11-11). Not tested: struct default values saved in assets, replication, SaveGame.
+### 2. In-game probe (does the struct work at runtime?)
+
+`FFA_StructNativizationTest` is a small FFA room. `Blueprints/BP_SNT_Probe` stands at the north wall next to a grey reference cube. On BeginPlay it:
+
+1. makes an `S_SNT_Excluded` value with its bool member set to true,
+2. stores it in a variable of that struct type,
+3. reads the variable back, breaks the struct and branches on the bool.
+
+True: the panel shows **STRUCT OK** and the green cube grows into a 6 m pillar. False: **STRUCT READ FALSE**. If BeginPlay never runs, the panel keeps "BeginPlay did not run"; if the probe class fails to load, the probe is missing. The probe uses only the excluded struct.
+
+Result in Chivalry 2 (Unchained, 2026-11-11): **STRUCT OK** with the pillar grown.
+
+Evidence level: **package** for the A/B and **in game** for the excluded struct (ArgonSDK, UE 4.25.4). This shows that the struct type loads from the mod PAK and carries a value written at runtime through a variable. Not tested: struct default values saved in assets or set on placed actors, arrays of structs, data tables, replication and SaveGame.
 
 ### Reproduce
 
@@ -48,10 +62,11 @@ Tested with ArgonSDK on UE 4.25.4 (2026-11-11). Evidence level: **package** (coo
    +ExcludedAssets=/Game/Mods/AgMods/StructNativizationTest/Types/S_SNT_Excluded
    +ExcludedAssets=/Game/Mods/AgMods/StructNativizationTest/Types/E_SNT_Excluded
    ```
-3. Cook (`UE4Editor-Cmd <ProjectRoot>/TBL.uproject -run=cook -targetplatform=WindowsNoEditor -map=<any small map> -COOKDIR=/Game/Mods/AgMods/StructNativizationTest`) and look in `<ProjectRoot>/Saved/Cooked/WindowsNoEditor/TBL/Content/Mods/AgMods/StructNativizationTest`.
-4. The control types are absent; their generated C++ is under `<ProjectRoot>/Intermediate/Plugins/NativizedAssets/`.
+3. Cook the probe map and the folder: `UE4Editor-Cmd <ProjectRoot>/TBL.uproject -run=cook -targetplatform=WindowsNoEditor -map=/Game/Mods/AgMods/StructNativizationTest/FFA_StructNativizationTest -COOKDIR=/Game/Mods/AgMods/StructNativizationTest`.
+4. Package A/B: in `<ProjectRoot>/Saved/Cooked/WindowsNoEditor/TBL/Content/Mods/AgMods/StructNativizationTest` the control types are absent; their generated C++ is under `<ProjectRoot>/Intermediate/Plugins/NativizedAssets/`.
+5. In game: **before packing, delete the cooked `BP_SNT_Holder.uasset` / `.uexp`** (it references the missing control types and does not belong in a playable PAK). Pack the rest under `../../../TBL/Content/Mods/AgMods/StructNativizationTest/`, install it like any mod PAK, start an FFA match on `FFA_StructNativizationTest` and look at the north wall.
 
-Remove the two lines again afterwards if you don't want them in your project.
+Remove the two ini lines again afterwards if you don't want them in your project. `Blueprints/BP_MazeStartup` is the match-startup helper from [MirrorMaze](https://github.com/SageFlare/MirrorMaze) (zeroes the start wait and starts respawn waves).
 
 ## More
 
