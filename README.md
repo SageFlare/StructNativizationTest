@@ -52,7 +52,7 @@ True: the panel shows **STRUCT OK** and the green cube grows into a 6 m pillar. 
 
 Result in Chivalry 2 (Unchained, 2026-11-11): **STRUCT OK** with the pillar grown.
 
-Evidence level: **package** for the A/B and **in game** for the excluded struct (ArgonSDK, UE 4.25.4). This shows that the struct type loads from the mod PAK and carries a value written at runtime through a variable. Not tested: struct default values saved in assets or set on placed actors, arrays of structs, data tables, replication and SaveGame.
+Evidence level: **package** for the A/B and **in game** for the excluded struct (ArgonSDK, UE 4.25.4). This shows that the struct type loads from the mod PAK and carries a value written at runtime through a variable. Defaults, placed-actor values, arrays, data tables, SaveGame and replication are covered by the suite below.
 
 ### 3. Struct use suite (same map)
 
