@@ -38,7 +38,7 @@ Check that each type's `.uasset` / `.uexp` is in the PAK listing (`UnrealPak <pa
 | `Types/E_SNT_Control` (enum) | no | converted to C++, **missing** (proves nativization ran) |
 | `BP_SNT_Holder` | n/a | in the PAK, with one variable of each type; still references both control types |
 
-Tested with ArgonSDK on UE 4.25.4 (2026-11-11). Evidence level: **package** (cooked output and PAK listing). In-game confirmation: pending.
+Tested with ArgonSDK on UE 4.25.4 (2026-11-11). Evidence level: **package** (cooked output and PAK listing) and **in game** for the excluded struct: a probe Blueprint in a test map wrote a value into `S_SNT_Excluded` at runtime, read it back through a variable of that type and branched on it correctly in Chivalry 2 (2026-11-11). Not tested: struct default values saved in assets, replication, SaveGame.
 
 ### Reproduce
 
